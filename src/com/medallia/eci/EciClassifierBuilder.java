@@ -1,5 +1,9 @@
 package com.medallia.eci;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.StringTokenizer;
+
 import challenge.lib.Classifier;
 import challenge.lib.ClassifierBuilder;
 import challenge.lib.Sentiment;
@@ -44,9 +48,51 @@ public class EciClassifierBuilder implements ClassifierBuilder {
 	 */
 	@Override
 	public Classifier training(Iterable<TaggedReview> data) {
-		final SimpleTokenizer t = new SimpleTokenizer();
-
+		final HashSet<String> PositiveWords = new HashSet<String>();
+		final HashSet<String> NegativeWords = new HashSet<String>();
+		final StopWords sw = new StopWords();
+		
+		ArrayList<String> StopWords = new ArrayList<String>();
+		StopWords.add("it");
+		StopWords.add("has");
+		StopWords.add("at");
+		StopWords.add("the");
+		StopWords.add("The");	
+		StopWords.add("is");
+		StopWords.add("an");
+		StopWords.add("to");
+		StopWords.add("this");
+		StopWords.add(".");
+		StopWords.add(",");
+		StopWords.add("(");
+		StopWords.add(")");
+		StopWords.add("not");
+		StopWords.add("and");
+		StopWords.add("a");
+		StopWords.add("of");
+		
 		for (TaggedReview taggedReview : data) {
+			//for(String i: StopWords){
+			//	taggedReview.review.replace(i, " ");
+			//}
+		    StringTokenizer st = new StringTokenizer(taggedReview.review);
+			if(taggedReview.sentiment == Sentiment.POSITIVE){
+				while (st.hasMoreTokens() ) {
+					String s = st.nextToken();
+					if(!sw.check(s))
+						PositiveWords.add(s);
+			     }
+			}
+			else{
+				if(taggedReview.sentiment == Sentiment.NEGATIVE){
+					
+					while(st.hasMoreTokens()){
+						String s = st.nextToken();
+						if(!sw.check(s))
+							NegativeWords.add(s);
+					}
+				}
+			}
 			//System.out.println(taggedReview.toString());
 			// Do the training
 			// Learn from the sample data
@@ -60,15 +106,30 @@ public class EciClassifierBuilder implements ClassifierBuilder {
 			 */
 			@Override
 			public Sentiment classify(String review) {
-				String s[] = t.tokenize(review);
-				for(String x: s){
-					System.out.print(x+"-");
-				}
-				System.out.println();
-				// Put your classifier here
+				int pos=0;
+				int neg=0;
+			    StringTokenizer st = new StringTokenizer(review);
 
-				// Replace this dummy return value with your prediction
-				return Sentiment.POSITIVE;
+				while(st.hasMoreTokens()){
+					String x = st.nextToken();
+					if(!sw.check(x)){
+					System.out.print(x+"-");
+						if(PositiveWords.contains(x)){
+							pos++;
+						}
+						 if(NegativeWords.contains(x)){
+							neg++;
+						 }
+					}
+				}
+				System.out.println(st.countTokens() + " " + pos + " " + neg);
+				// Put your classifier here
+				if( pos > neg)
+					return Sentiment.POSITIVE;
+				else if(pos < neg)
+					return Sentiment.NEGATIVE;
+				else 
+					return Sentiment.NEUTRAL;
 			}
 		};
 	}
